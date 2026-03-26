@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum BandStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum NewsType {
+  NEW_BAND
+  REUNION
+  TRIBUTE
+  GENERAL
+}
+
+enum ReleaseType {
+  ALBUM
+  EP
+  SINGLE
+}
+
+model Label {
+  id    String @id @default(uuid())
+  name  String
+  slug  String @unique
+  bands Band[]
+
+  @@index([slug])
+}
+
+model Band {
+  id              String     @id @default(uuid())
+  name            String
+  slug            String     @unique
+  city            String
+  yearFounded     Int
+  status          BandStatus
+  genres          String[]
+  biography       String     @db.Text
+  logoUrl         String?
+  youtubeUrl      String?
+  spotifyUrl      String?
+  instagramUrl    String?
+  lastVerifiedAt  DateTime?
+  archivedUrl     String?
+  sources         Json?
+  labelId         String?
+  label           Label?     @relation(fields: [labelId], references: [id], onDelete: SetNull)
+  albums          Album[]
+  members         Member[]
+  images          Image[]
+  interviews      Interview[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([name])
+  @@index([city])
+  @@index([yearFounded])
+  @@index([status])
+  @@index([labelId])
+}
+
+model NewsPost {
+  id          String    @id @default(uuid())
+  title       String
+  slug        String    @unique
+  body        String    @db.Text
+  type        NewsType  @default(GENERAL)
+  publishedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([publishedAt])
+  @@index([type])
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  title       String
+  venue       String
+  eventDate   DateTime
+  description String?   @db.Text
+  lineup      String?   @db.Text
+  url         String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([eventDate])
+}
+
+model Album {
+  id          String   @id @default(uuid())
+  bandId      String
+  band        Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  title       String
+  type        ReleaseType @default(ALBUM)
+  releaseYear Int
+  coverImage  String?
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bandId])
+  @@index([releaseYear])
+}
+
+model Member {
+  id          String   @id @default(uuid())
+  bandId      String
+  band        Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  name        String
+  role        String
+  yearsActive String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bandId])
+}
+
+model Image {
+  id        String   @id @default(uuid())
+  bandId    String
+  band      Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  caption   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bandId])
+}
+
+model Visit {
+  id        String   @id @default(uuid())
+  country   String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([country])
+}
+
+enum SuggestionStatus {
+  PENDING
+  ADDED
+  DISMISSED
+}
+
+model BandSuggestion {
+  id                String            @id @default(uuid())
+  bandName          String
+  city              String
+  genres            String            @db.Text
+  yearFounded       Int?
+  links             String?           @db.Text
+  notes             String?           @db.Text
+  contributorEmail  String?
+  status            SuggestionStatus  @default(PENDING)
+  createdAt         DateTime          @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model Interview {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String   @unique
+  content        String   @db.Text
+  featuredImage  String
+  dateCreated    DateTime @default(now())
+  bandId         String
+  band           Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+
+  @@index([dateCreated])
+  @@index([bandId])
+}
